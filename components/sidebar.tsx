@@ -17,7 +17,7 @@ export function Sidebar({ activeTab = "home", onTabChange }: SidebarProps) {
   ]
 
   return (
-    <aside className="fixed left-0 top-28 h-[calc(100vh-7rem)] w-64 bg-card border-r border-border p-4 hidden lg:block z-40">
+    <aside className="fixed left-[var(--sidebar-left-gap)] top-28 h-[calc(100vh-7rem)] w-64 bg-card border-r border-border p-4 hidden lg:block z-40">
       <nav className="space-y-2">
         {navItems.map((item) => {
           const Icon = item.icon

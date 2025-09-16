@@ -126,7 +126,7 @@ export default function HomePage() {
 
       <Sidebar activeTab={activeTab} onTabChange={setActiveTab} />
 
-      <main className="lg:ml-64 flex justify-center px-4 py-6">
+      <main className="lg:ml-[calc(var(--sidebar-left-gap)+16rem)] flex justify-center px-4 py-6">
         <div className="w-full max-w-2xl space-y-6">
           {mockPosts.map((post) => (
             <PostCard
