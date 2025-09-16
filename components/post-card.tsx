@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
-import { useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 
 interface User {
   id: string
@@ -27,6 +27,12 @@ interface Post {
   thread: Post[]
 }
 
+type ContinuationCandidate = {
+  id: string
+  text: string
+  votes: number
+}
+
 interface PostCardProps {
   post: Post
   onProfileClick: () => void
@@ -37,15 +43,47 @@ interface PostCardProps {
 export function PostCard({ post, onProfileClick, onReadThread, isReply = false }: PostCardProps) {
   const [showContinueForm, setShowContinueForm] = useState(false)
   const [continueText, setContinueText] = useState("")
+  const [candidates, setCandidates] = useState<ContinuationCandidate[]>([])
+  const [votedCandidateId, setVotedCandidateId] = useState<string | null>(null)
+
+  const voteStorageKey = useMemo(() => `vote-${post.id}`, [post.id])
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(voteStorageKey)
+      if (saved) {
+        const parsed = JSON.parse(saved) as { candidateId: string }
+        setVotedCandidateId(parsed.candidateId)
+      }
+    } catch {}
+  }, [voteStorageKey])
 
   const handleContinueSubmit = () => {
-    if (continueText.trim()) {
-      // Here you would typically send the continuation to your backend
-      console.log("Continue story:", continueText)
-      setShowContinueForm(false)
-      setContinueText("")
+    const text = continueText.trim()
+    if (!text) return
+    const newCandidate: ContinuationCandidate = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      text,
+      votes: 0,
     }
+    setCandidates((prev) => [...prev, newCandidate])
+    setShowContinueForm(false)
+    setContinueText("")
   }
+
+  const handleVote = (candidateId: string) => {
+    if (votedCandidateId) return
+    setCandidates((prev) => prev.map((c) => (c.id === candidateId ? { ...c, votes: c.votes + 1 } : c)))
+    setVotedCandidateId(candidateId)
+    try {
+      localStorage.setItem(voteStorageKey, JSON.stringify({ candidateId }))
+    } catch {}
+  }
+
+  const leadingCandidate = useMemo(() => {
+    if (candidates.length === 0) return null
+    return [...candidates].sort((a, b) => b.votes - a.votes)[0]
+  }, [candidates])
 
   return (
     <Card
@@ -87,6 +125,40 @@ export function PostCard({ post, onProfileClick, onReadThread, isReply = false }
 
           {/* Content */}
           <div className="text-foreground leading-relaxed mb-4 text-pretty">{post.content}</div>
+
+          {/* Continuation candidates voting */}
+          {candidates.length > 0 && (
+            <div className="mb-4 p-4 bg-muted/30 rounded-xl border border-border/50 space-y-3">
+              <div className="text-sm text-muted-foreground">
+                現在の続き候補（多数決で一時的に最有力が続きになります）
+              </div>
+              {leadingCandidate && (
+                <div className="text-xs text-accent -mt-2">
+                  現在の有力候補: {leadingCandidate.text.slice(0, 48)}
+                  {leadingCandidate.text.length > 48 ? "…" : ""}
+                </div>
+              )}
+              <div className="space-y-2">
+                {candidates.map((c) => (
+                  <div key={c.id} className="flex items-start gap-3">
+                    <div className="flex-1 text-sm text-foreground/90">{c.text}</div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-muted-foreground tabular-nums">{c.votes}</span>
+                      <Button
+                        size="sm"
+                        variant={votedCandidateId === c.id ? "secondary" : "outline"}
+                        disabled={!!votedCandidateId}
+                        onClick={() => handleVote(c.id)}
+                        className={cn("h-7 px-3", votedCandidateId ? "opacity-70" : "")}
+                      >
+                        {votedCandidateId === c.id ? "投票済み" : "投票"}
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Thread indicator */}
           {post.thread && post.thread.length > 0 && (
@@ -135,7 +207,7 @@ export function PostCard({ post, onProfileClick, onReadThread, isReply = false }
                     disabled={!continueText.trim()}
                     className="bg-accent hover:bg-accent/90 text-accent-foreground"
                   >
-                    投稿
+                    候補として追加
                   </Button>
                 </div>
               </div>
