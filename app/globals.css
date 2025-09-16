@@ -39,7 +39,7 @@
   --sidebar-border: oklch(0.9 0 0);
   --sidebar-ring: oklch(0.6 0.15 15 / 0.5);
   /* Responsive left gutter for sidebar; shrinks first on narrower viewports */
-  --sidebar-left-gap: clamp(0px, (100vw - 1200px) / 2, 48px);
+  --sidebar-left-gap: clamp(0px, (100vw - 1200px) / 2, 120px);
 }
 
 .dark {
