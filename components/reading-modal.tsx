@@ -101,7 +101,7 @@ export function ReadingModal({ threadId, posts, onClose }: ReadingModalProps) {
               {/* Continue story button */}
               <div className="text-center pt-4">
                 <Button variant="outline" className="border-accent text-accent hover:bg-accent/10 bg-transparent">
-                  この物語に続きを書く
+                  この物語を紡ぐ
                 </Button>
               </div>
             </div>

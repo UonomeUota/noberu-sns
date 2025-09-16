@@ -100,7 +100,7 @@ export function PostCard({ post, onProfileClick, onReadThread, isReply = false }
             <div className="mb-4 p-4 bg-muted/30 rounded-xl border border-border/50">
               <div className="flex items-center mb-3">
                 <PenTool className="h-4 w-4 mr-2 text-accent" />
-                <span className="text-sm font-medium text-foreground">この物語に続きを書く...</span>
+                <span className="text-sm font-medium text-foreground">この物語を紡ぐ...</span>
               </div>
               <Textarea
                 value={continueText}
@@ -166,7 +166,7 @@ export function PostCard({ post, onProfileClick, onReadThread, isReply = false }
               className="text-foreground/70 hover:text-accent hover:bg-accent/10"
             >
               <PenTool className="h-4 w-4 mr-2" />
-              <span className="font-medium">続きを書く</span>
+              <span className="font-medium">紡ぐ</span>
             </Button>
           </div>
         </div>
