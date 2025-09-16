@@ -63,19 +63,26 @@ export function PostCard({ post, onProfileClick, onReadThread, isReply = false }
 
         <div className="flex-1 min-w-0">
           {/* User Info */}
-          <div className="flex items-center space-x-2 mb-2">
-            <button
-              onClick={onProfileClick}
-              className="font-semibold text-foreground hover:text-primary transition-colors"
-            >
-              {post.user.name}
-            </button>
-            <span className="text-muted-foreground text-sm">{post.user.username}</span>
-            <span className="text-muted-foreground text-sm">·</span>
-            <span className="text-muted-foreground text-sm">{post.timestamp}</span>
-            <Button variant="ghost" size="icon" className="h-6 w-6 ml-auto">
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
+          <div className="mb-2">
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={onProfileClick}
+                className="font-semibold text-foreground hover:text-primary transition-colors"
+              >
+                {post.user.name}
+              </button>
+              {/* Inline meta (desktop+) */}
+              <span className="hidden lg:inline text-muted-foreground text-sm">{post.user.username}</span>
+              <span className="hidden lg:inline text-muted-foreground text-sm">·</span>
+              <span className="hidden lg:inline text-muted-foreground text-sm">{post.timestamp}</span>
+              <Button variant="ghost" size="icon" className="h-6 w-6 ml-auto">
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </div>
+            {/* Stacked @ID (mobile/tablet) */}
+            <div className="lg:hidden mt-0.5">
+              <span className="text-muted-foreground text-sm block">{post.user.username}</span>
+            </div>
           </div>
 
           {/* Content */}
