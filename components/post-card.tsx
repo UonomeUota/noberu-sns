@@ -1,31 +1,13 @@
 "use client"
 
-import { Heart, MessageCircle, Share, MoreHorizontal, Eye, PenTool } from "lucide-react"
+import { Check, Heart, MessageCircle, Share, MoreHorizontal, Eye, PenTool } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
 import { useEffect, useMemo, useState } from "react"
-
-interface User {
-  id: string
-  name: string
-  username: string
-  avatar: string
-}
-
-interface Post {
-  id: string
-  user: User
-  content: string
-  timestamp: string
-  likes: number
-  replies: number
-  shares: number
-  isLiked: boolean
-  thread: Post[]
-}
+import type { StoryPost } from "@/lib/post-types"
 
 type ContinuationCandidate = {
   id: string
@@ -34,7 +16,7 @@ type ContinuationCandidate = {
 }
 
 interface PostCardProps {
-  post: Post
+  post: StoryPost
   onProfileClick: () => void
   onReadThread: () => void
   isReply?: boolean
@@ -45,6 +27,10 @@ export function PostCard({ post, onProfileClick, onReadThread, isReply = false }
   const [continueText, setContinueText] = useState("")
   const [candidates, setCandidates] = useState<ContinuationCandidate[]>([])
   const [votedCandidateId, setVotedCandidateId] = useState<string | null>(null)
+  const [isLiked, setIsLiked] = useState(post.isLiked)
+  const [likeCount, setLikeCount] = useState(post.likes)
+  const [shareCount, setShareCount] = useState(post.shares)
+  const [isShared, setIsShared] = useState(false)
 
   const voteStorageKey = useMemo(() => `vote-${post.id}`, [post.id])
 
@@ -85,19 +71,42 @@ export function PostCard({ post, onProfileClick, onReadThread, isReply = false }
     return [...candidates].sort((a, b) => b.votes - a.votes)[0]
   }, [candidates])
 
+  const toggleLike = () => {
+    setIsLiked((liked) => {
+      setLikeCount((count) => count + (liked ? -1 : 1))
+      return !liked
+    })
+  }
+
+  const handleShare = async () => {
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: "Noberuの物語", text: post.content, url: window.location.href })
+      } else {
+        await navigator.clipboard.writeText(`${post.content}\n${window.location.href}`)
+      }
+      if (!isShared) setShareCount((count) => count + 1)
+      setIsShared(true)
+    } catch {
+      // The share sheet may be dismissed by the user; no state change is needed.
+    }
+  }
+
   return (
     <Card
       className={cn(
-        "p-6 rounded-2xl shadow-sm hover:shadow-md transition-all duration-200 border-border/50",
-        isReply && "ml-8 border-l-4 border-l-accent",
+        "rounded-3xl border-border/60 p-4 shadow-sm transition-all duration-200 hover:shadow-md sm:p-6",
+        isReply && "ml-3 border-l-4 border-l-accent sm:ml-8",
       )}
     >
       <div className="flex space-x-3">
         {/* Avatar */}
-        <Avatar className="h-12 w-12 cursor-pointer" onClick={onProfileClick}>
-          <AvatarImage src={post.user.avatar || "/placeholder.svg"} alt={post.user.name} />
-          <AvatarFallback className="bg-accent text-accent-foreground">{post.user.name.charAt(0)}</AvatarFallback>
-        </Avatar>
+        <button type="button" onClick={onProfileClick} className="h-fit shrink-0 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" aria-label={`${post.user.name}のプロフィールを見る`}>
+          <Avatar className="size-11 sm:size-12">
+            <AvatarImage src={post.user.avatar || "/placeholder.svg"} alt={post.user.name} />
+            <AvatarFallback className="bg-accent text-accent-foreground">{post.user.name.charAt(0)}</AvatarFallback>
+          </Avatar>
+        </button>
 
         <div className="flex-1 min-w-0">
           {/* User Info */}
@@ -113,7 +122,7 @@ export function PostCard({ post, onProfileClick, onReadThread, isReply = false }
               <span className="hidden lg:inline text-muted-foreground text-sm">{post.user.username}</span>
               <span className="hidden lg:inline text-muted-foreground text-sm">·</span>
               <span className="hidden lg:inline text-muted-foreground text-sm">{post.timestamp}</span>
-              <Button variant="ghost" size="icon" className="h-6 w-6 ml-auto">
+              <Button type="button" variant="ghost" size="icon" className="ml-auto size-7" disabled title="その他の操作は準備中です" aria-label="その他の操作は準備中">
                 <MoreHorizontal className="h-4 w-4" />
               </Button>
             </div>
@@ -130,7 +139,7 @@ export function PostCard({ post, onProfileClick, onReadThread, isReply = false }
           {candidates.length > 0 && (
             <div className="mb-4 p-4 bg-muted/30 rounded-xl border border-border/50 space-y-3">
               <div className="text-sm text-muted-foreground">
-                現在の続き候補（多数決で一時的に最有力が続きになります）
+                みんなが提案した続きです。最も票を集めた候補が次の展開になります。
               </div>
               {leadingCandidate && (
                 <div className="text-xs text-accent -mt-2">
@@ -215,37 +224,43 @@ export function PostCard({ post, onProfileClick, onReadThread, isReply = false }
           )}
 
           {/* Actions */}
-          <div className="flex items-center justify-between max-w-md">
-            <Button variant="ghost" size="sm" className="text-foreground/70 hover:text-accent hover:bg-accent/10 -ml-2">
-              <MessageCircle className="h-4 w-4 mr-2" />
+          <div className="grid max-w-md grid-cols-4 gap-1">
+            <Button type="button" variant="ghost" size="sm" onClick={onReadThread} disabled={post.replies === 0} aria-label={`${post.replies}件の返信を読む`} className="px-2 text-foreground/70 hover:bg-accent/10 hover:text-accent">
+              <MessageCircle className="h-4 w-4 sm:mr-2" />
               <span className="font-medium">{post.replies}</span>
             </Button>
 
             <Button
+              type="button"
               variant="ghost"
               size="sm"
+              onClick={toggleLike}
+              aria-label={isLiked ? "いいねを取り消す" : "いいねする"}
+              aria-pressed={isLiked}
               className={cn(
-                "text-foreground/70 hover:bg-accent/10",
-                post.isLiked ? "text-accent" : "hover:text-accent",
+                "px-2 text-foreground/70 hover:bg-accent/10",
+                isLiked ? "text-accent" : "hover:text-accent",
               )}
             >
-              <Heart className={cn("h-4 w-4 mr-2", post.isLiked && "fill-current")} />
-              <span className="font-medium">{post.likes}</span>
+              <Heart className={cn("h-4 w-4 sm:mr-2", isLiked && "fill-current")} />
+              <span className="font-medium">{likeCount}</span>
             </Button>
 
-            <Button variant="ghost" size="sm" className="text-foreground/70 hover:text-accent hover:bg-accent/10">
-              <Share className="h-4 w-4 mr-2" />
-              <span className="font-medium">{post.shares}</span>
+            <Button type="button" variant="ghost" size="sm" onClick={handleShare} aria-label={isShared ? "共有しました" : "物語を共有"} className="px-2 text-foreground/70 hover:bg-accent/10 hover:text-accent">
+              {isShared ? <Check className="h-4 w-4 sm:mr-2" /> : <Share className="h-4 w-4 sm:mr-2" />}
+              <span className="font-medium">{shareCount}</span>
             </Button>
 
             <Button
+              type="button"
               variant="ghost"
               size="sm"
               onClick={() => setShowContinueForm(!showContinueForm)}
-              className="text-foreground/70 hover:text-accent hover:bg-accent/10"
+              aria-expanded={showContinueForm}
+              className="px-2 text-foreground/70 hover:bg-accent/10 hover:text-accent"
             >
-              <PenTool className="h-4 w-4 mr-2" />
-              <span className="font-medium">紡ぐ</span>
+              <PenTool className="h-4 w-4 sm:mr-2" />
+              <span className="hidden font-medium sm:inline">紡ぐ</span>
             </Button>
           </div>
         </div>

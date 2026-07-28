@@ -4,6 +4,7 @@ import { X, MapPin, Calendar, LinkIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import Image from "next/image"
 
 interface ProfileModalProps {
   userId: string
@@ -26,24 +27,26 @@ const mockUser = {
   posts: 89,
 }
 
-export function ProfileModal({ userId, onClose }: ProfileModalProps) {
+export function ProfileModal({ onClose }: ProfileModalProps) {
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/55 p-3 backdrop-blur-sm sm:p-4" role="dialog" aria-modal="true" aria-labelledby="profile-title">
       <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl">
         {/* Header with close button */}
         <div className="sticky top-0 bg-card z-10 p-4 border-b flex items-center justify-between">
-          <h2 className="text-xl font-semibold">プロフィール</h2>
-          <Button variant="ghost" size="icon" onClick={onClose}>
+          <h2 id="profile-title" className="text-xl font-semibold">プロフィール</h2>
+          <Button type="button" variant="ghost" size="icon" onClick={onClose} aria-label="プロフィールを閉じる">
             <X className="h-5 w-5" />
           </Button>
         </div>
 
         {/* Banner */}
         <div className="relative h-48 bg-gradient-to-r from-primary/20 to-accent/20">
-          <img
+          <Image
             src={mockUser.banner || "/placeholder.svg"}
-            alt="Profile banner"
-            className="w-full h-full object-cover"
+            alt="桜と本のプロフィール背景"
+            fill
+            sizes="(max-width: 672px) 100vw, 672px"
+            className="object-cover"
           />
         </div>
 
@@ -56,8 +59,8 @@ export function ProfileModal({ userId, onClose }: ProfileModalProps) {
                 {mockUser.name.charAt(0)}
               </AvatarFallback>
             </Avatar>
-            <Button variant="outline" className="mt-2 bg-transparent">
-              フォロー
+            <Button type="button" variant="outline" className="mt-2 bg-transparent" disabled title="フォロー機能は準備中です">
+              フォロー機能は準備中
             </Button>
           </div>
 
@@ -76,7 +79,7 @@ export function ProfileModal({ userId, onClose }: ProfileModalProps) {
               </div>
               <div className="flex items-center gap-1">
                 <LinkIcon className="h-4 w-4" />
-                <a href={mockUser.website} className="text-primary hover:underline">
+                <a href={mockUser.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
                   {mockUser.website.replace("https://", "")}
                 </a>
               </div>

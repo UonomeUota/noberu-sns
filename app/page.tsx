@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useMemo, useState } from "react"
+import { BookOpen, MessageCircle, Sparkles, Trophy } from "lucide-react"
 import { Header } from "@/components/header"
 import { Sidebar } from "@/components/sidebar"
 import { PostCard } from "@/components/post-card"
@@ -8,9 +9,11 @@ import { FloatingButton } from "@/components/floating-button"
 import { ProfileModal } from "@/components/profile-modal"
 import { ReadingModal } from "@/components/reading-modal"
 import { NewPostModal } from "@/components/new-post-modal"
+import { Button } from "@/components/ui/button"
+import type { StoryPost } from "@/lib/post-types"
 
 // Mock data for posts
-const mockPosts = [
+const mockPosts: StoryPost[] = [
   {
     id: "1",
     user: {
@@ -42,6 +45,7 @@ const mockPosts = [
         replies: 2,
         shares: 1,
         isLiked: true,
+        thread: [],
       },
     ],
   },
@@ -93,6 +97,7 @@ const mockPosts = [
         replies: 7,
         shares: 2,
         isLiked: false,
+        thread: [],
       },
       {
         id: "3-2",
@@ -109,33 +114,115 @@ const mockPosts = [
         replies: 18,
         shares: 9,
         isLiked: true,
+        thread: [],
       },
     ],
   },
 ]
 
 export default function HomePage() {
+  const [posts, setPosts] = useState<StoryPost[]>(mockPosts)
   const [selectedProfile, setSelectedProfile] = useState<string | null>(null)
   const [selectedThread, setSelectedThread] = useState<string | null>(null)
   const [showNewPost, setShowNewPost] = useState(false)
   const [activeTab, setActiveTab] = useState("home")
+  const [searchQuery, setSearchQuery] = useState("")
+
+  const visiblePosts = useMemo(() => {
+    const normalizedQuery = searchQuery.trim().toLocaleLowerCase("ja")
+    const filtered = normalizedQuery
+      ? posts.filter((post) =>
+          [post.content, post.user.name, post.user.username].some((value) =>
+            value.toLocaleLowerCase("ja").includes(normalizedQuery),
+          ),
+        )
+      : posts
+
+    return activeTab === "ranking" ? [...filtered].sort((a, b) => b.likes - a.likes) : filtered
+  }, [activeTab, posts, searchQuery])
+
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab)
+    if (tab === "profile") setSelectedProfile("1")
+  }
+
+  const handleCreatePost = (content: string) => {
+    const newPost: StoryPost = {
+      id: `post-${Date.now()}`,
+      user: {
+        id: "current-user",
+        name: "あなた",
+        username: "@you",
+        avatar: "/diverse-user-avatars.png",
+      },
+      content,
+      timestamp: "たった今",
+      likes: 0,
+      replies: 0,
+      shares: 0,
+      isLiked: false,
+      thread: [],
+    }
+    setPosts((current) => [newPost, ...current])
+    setActiveTab("home")
+    setShowNewPost(false)
+  }
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
+    <div id="top" className="min-h-screen bg-background">
+      <Header
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        onMessagesClick={() => setActiveTab("messages")}
+        onProfileClick={() => setSelectedProfile("1")}
+      />
 
-      <Sidebar activeTab={activeTab} onTabChange={setActiveTab} />
+      <Sidebar activeTab={activeTab} onTabChange={handleTabChange} />
 
-      <main className="lg:ml-[calc(var(--sidebar-left-gap)+16rem)] flex justify-center px-0 py-6">
-        <div className="w-full max-w-2xl lg:pl-0 space-y-6">
-          {mockPosts.map((post) => (
-            <PostCard
-              key={post.id}
-              post={post}
-              onProfileClick={() => setSelectedProfile(post.user.id)}
-              onReadThread={() => setSelectedThread(post.id)}
-            />
-          ))}
+      <main className="flex justify-center px-3 pb-28 pt-5 sm:px-6 lg:ml-[calc(var(--sidebar-left-gap)+16rem)] lg:pb-10">
+        <div className="w-full max-w-2xl space-y-5">
+          <section className="overflow-hidden rounded-3xl border border-primary/15 bg-gradient-to-br from-primary/10 via-card to-accent/10 p-5 shadow-sm sm:p-7">
+            <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-primary">
+              <Sparkles className="size-4" aria-hidden="true" />
+              みんなで紡ぐ、ひとつの物語
+            </div>
+            <h1 className="text-balance text-2xl font-bold tracking-tight sm:text-3xl">一文から始まる、予想できない物語。</h1>
+            <p className="mt-3 text-pretty text-sm leading-7 text-muted-foreground sm:text-base">
+              書き出しを投稿し、誰かの続きを読み、次の展開を提案する。投票で選ばれた言葉が物語を前へ進めます。
+            </p>
+          </section>
+
+          <div className="flex items-center justify-between gap-3 px-1">
+            <div>
+              <p className="text-sm font-semibold text-primary">{activeTab === "ranking" ? "Popular stories" : "Story feed"}</p>
+              <h2 className="text-xl font-bold">{activeTab === "ranking" ? "人気の物語" : "新着の物語"}</h2>
+            </div>
+            {activeTab === "ranking" && <Trophy className="size-6 text-primary" aria-hidden="true" />}
+          </div>
+
+          {activeTab === "messages" ? (
+            <section className="rounded-3xl border bg-card p-8 text-center shadow-sm">
+              <MessageCircle className="mx-auto mb-4 size-9 text-primary" aria-hidden="true" />
+              <h2 className="text-xl font-semibold">メッセージ機能は準備中です</h2>
+              <p className="mt-2 text-sm leading-6 text-muted-foreground">現在は物語の投稿・閲覧・投票をお楽しみください。</p>
+              <Button className="mt-5" onClick={() => setActiveTab("home")}>物語を読む</Button>
+            </section>
+          ) : visiblePosts.length > 0 ? (
+            visiblePosts.map((post) => (
+              <PostCard
+                key={post.id}
+                post={post}
+                onProfileClick={() => setSelectedProfile(post.user.id)}
+                onReadThread={() => setSelectedThread(post.id)}
+              />
+            ))
+          ) : (
+            <section className="rounded-3xl border bg-card p-8 text-center shadow-sm">
+              <BookOpen className="mx-auto mb-4 size-9 text-primary" aria-hidden="true" />
+              <h2 className="text-xl font-semibold">該当する物語がありません</h2>
+              <p className="mt-2 text-sm text-muted-foreground">検索語を変えてもう一度お試しください。</p>
+            </section>
+          )}
         </div>
       </main>
 
@@ -144,10 +231,10 @@ export default function HomePage() {
       {selectedProfile && <ProfileModal userId={selectedProfile} onClose={() => setSelectedProfile(null)} />}
 
       {selectedThread && (
-        <ReadingModal threadId={selectedThread} posts={mockPosts} onClose={() => setSelectedThread(null)} />
+        <ReadingModal threadId={selectedThread} posts={posts} onClose={() => setSelectedThread(null)} />
       )}
 
-      {showNewPost && <NewPostModal onClose={() => setShowNewPost(false)} />}
+      {showNewPost && <NewPostModal onClose={() => setShowNewPost(false)} onSubmit={handleCreatePost} />}
     </div>
   )
 }

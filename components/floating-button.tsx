@@ -10,9 +10,11 @@ interface FloatingButtonProps {
 export function FloatingButton({ onClick }: FloatingButtonProps) {
   return (
     <Button
+      type="button"
       onClick={onClick}
       size="icon"
-      className="fixed bottom-6 right-6 h-14 w-14 rounded-full bg-primary hover:bg-primary/90 shadow-lg hover:shadow-xl transition-all duration-300 animate-float z-50"
+      aria-label="新しい物語を書く"
+      className="fixed bottom-20 right-4 z-40 h-14 w-14 rounded-full bg-primary shadow-lg transition-all duration-300 hover:bg-primary/90 hover:shadow-xl sm:right-6 lg:bottom-6"
     >
       <Plus className="h-6 w-6" />
     </Button>
